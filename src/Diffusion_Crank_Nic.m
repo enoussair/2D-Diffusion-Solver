@@ -83,10 +83,7 @@ RHS = zeros((N-1)*(N-2),1);
 U_solut = U_init; 
 
 %The error variable will be used to determine the final error
-error = 100;
-
-%This keeps track of how many iterations into iter
-iter = 1;
+error = 0
 
 for t = 0:d_t:4
 n = 1;
@@ -167,7 +164,6 @@ end
     %found, the previous solution, U_init, becomes the new solution and the new solution,U_solut, goes
     %on to to change again.
     U_init = U_solut;
-    iter = iter+1
     surf(x,y,U_solut)
     drawnow
     
