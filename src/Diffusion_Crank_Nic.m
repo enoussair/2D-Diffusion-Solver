@@ -83,7 +83,7 @@ RHS = zeros((N-1)*(N-2),1);
 U_solut = U_init; 
 
 %The error variable will be used to determine the final error
-error = 100; %percent (relative error, assumed to be 100 at first)
+error = 100;
 
 %This keeps track of how many iterations into iter
 iter = 1;
@@ -171,7 +171,6 @@ end
     surf(x,y,U_solut)
     drawnow
     
-    %If the average error is low, it means the equation is converging to a value and the for loop stops and the current time is shown
-
+   
 end
  grid = norm(U_solut,2)
