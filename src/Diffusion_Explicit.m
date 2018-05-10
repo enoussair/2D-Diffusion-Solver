@@ -51,8 +51,8 @@ for i = 2:N-1
 end
         %This finds the relative error
         error = abs(mean(mean(U_solut)) - mean(mean(U_init)))/abs(mean(mean(U_solut)));
-    
-       if error < .001
+       %This shows the time interval it took for the solution to change very little for each time step
+       if error < .00001
             disp(t)
        break
        end
