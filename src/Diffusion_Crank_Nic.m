@@ -1,6 +1,6 @@
 %Splits up the domain of interest. 2 pi is the length
 %and width of the rectangle
-N = 150;
+N = 60;
 d_x = 2*pi/(N-1);
 d_y = 2*pi/(N-1);
 
@@ -14,7 +14,7 @@ y = a_y:d_y:b_y;
 
 %Time domain
 
-d_t = d_x/(.5*N-1);
+d_t = d_x^2/4;
 
 %The dirchelet boundary conditions
 f_a = (x-a_x).^2.*cos(pi*x/(a_x)); %top boundary 
@@ -36,6 +36,9 @@ r = 1 + 4 * lam;
 %boundary condition at every N-1 node
 check = 0;
 
+%This value will contain the norm of the vector at specific Node value
+grid = 0;
+
 %This sets up with 5 Band System
 for j = 1:(N-2)*(N-1) %rows
     for k = 1:(N-1)*(N-2) %columns
@@ -54,10 +57,11 @@ for j = 1:(N-2)*(N-1) %rows
                 LHS(j,j+1) = - lam;
             end
         end
+    end
         %This part takes into account Neumann conditions on left edge by
         %checking if the code is at the left edge, which would modify the
         %coefficients around the main diagnol
-        if j == 1+check*N-1
+            if j == 1+check*(N-1)
             LHS(j,j+1) = -2*lam;
             if j > 1
                 LHS(j,j-1) = 0;
@@ -65,8 +69,6 @@ for j = 1:(N-2)*(N-1) %rows
             end
             check = check + 1; %increments the check value once a Neumann row has been found
         end
-
-    end
 end
 
 
@@ -80,16 +82,13 @@ RHS = zeros((N-1)*(N-2),1);
 %determine convegence.
 U_solut = U_init; 
 
-%The error variable will be used to determine when to stop running the code
-%The error the average value of each solution set. While this may not be
-%perfect and some anamolies may be present, this method will show whether
-%the system's values are changing drastically or not
+%The error variable will be used to determine the final error
 error = 100; %percent (relative error, assumed to be 100 at first)
 
 %This keeps track of how many iterations into iter
 iter = 1;
 
-while (error > .1)
+for t = 0:d_t:4
 n = 1;
 for i = 2:(N-1)
     for j = 1:(N-1)
@@ -104,29 +103,29 @@ for i = 2:(N-1)
         %This makes sure that the column is higher than one, meaning that
         %the Neumann condition is not at play
         if j > 1
-            %If the code is currently looking at the second column, it
+            %If the code is currently looking at the second row, it
             %means the bottom boundary condition must be added to the RHS
             %twice since we know it's a constant
-            if (i == 2)
+            if (i == 2) && j <N-1
                 RHS(n) = lam*(U_solut(i,j-1) + U_solut(i, j+1) + U_solut(i+1,j) + U_solut(i-1,j)) + (1-4*lam)*(U_solut(i,j)) + lam * U_solut(i-1,j);
             
             %If the code is at the second to last row but before the last column, it means the top boundary must be added    
             elseif i == N-1 && j < N-1
                 RHS(n) = lam*(U_solut(i,j-1) + U_solut(i, j+1) + U_solut(i+1,j) + U_solut(i-1,j)) + (1-4*lam)*(U_solut(i,j)) + lam * U_solut(i+1,j);
             
-            %If the code at the bottom right corner edge, then two boundary conditions will be added: The right
+            %If the code is at the bottom right corner edge, then two boundary conditions will be added: The right
             %edge boundary and the bottom edge boundary
             elseif j == N-1 && i == 2
             	RHS(n) = lam*(U_solut(i,j-1) + U_solut(i, j+1) + U_solut(i+1,j) + 2*U_solut(i-1,j)) + (1-4*lam)*(U_solut(i,j)) + lam * U_solut(i,j+1);
             
-            %If the code is at the second to last row, but not at a corner,
+            %If the code is at the second to last column, but not at a corner,
             %then the right boundary must be added
             elseif j == N-1 && i > 2 && i < N-1
-            	RHS(n) = lam*(U_solut(i,j-1) + U_solut(i, j+1) + U_solut(i+1,j) + U_solut(i-1,j)) + (1-4*lam)*(U_solut(i,j));
+            	RHS(n) = lam*(U_solut(i,j-1) + 2*U_solut(i, j+1) + U_solut(i+1,j) + U_solut(i-1,j)) + (1-4*lam)*(U_solut(i,j));
             %If the code is at the top right corner
-            %then the right boundary must be added
+            %then the right boundary must be added along with the top boundary
             elseif j == N-1 && i == N-2
-            	RHS(n) = lam*(U_solut(i,j-1) + U_solut(i, j+1) + U_solut(i+1,j) + U_solut(i-1,j)) + (1-4*lam)*(U_solut(i,j));
+            	RHS(n) = lam*(U_solut(i,j-1) + 2*U_solut(i, j+1) + 2*U_solut(i+1,j) + U_solut(i-1,j)) + (1-4*lam)*(U_solut(i,j));
             end
         end
         
@@ -140,7 +139,7 @@ for i = 2:(N-1)
         elseif j == 1 && i > 2 && i < N-1
             RHS(n) = lam*(U_solut(i+1,j) + U_solut(i-1,j)) + (1-4*lam)*(U_solut(i,j)) +2* lam * U_solut(i,j+1);
             
-        %This checks to see if it is at the top right corner    
+        %This checks to see if it is at the top left corner    
         elseif j == 1 && i == N-1
             RHS(n) = lam*(2*U_solut(i+1,j) + U_solut(i-1,j)) + (1-4*lam)*(U_solut(i,j)) +2* lam * U_solut(i,j+1);
         end 
@@ -152,11 +151,11 @@ end
 
     %Solution for each time step
 
-    U_solved = linsolve(RHS,LHS);
+    U_solved = linsolve(LHS,RHS);
     %This breaks the solution, which is initially a vector, into a matrix
     %for easy meshing
-    U_new = reshape(U_solved,[(N-2),(N-1)]);
-    
+    U_new = vec2mat(U_solved,N-1);
+   
     %This injects the solution into the U_solut matrix, which already
     %contains the set boundary conditions.
     U_solut(2:N-1,1:N-1) = U_new;
@@ -168,7 +167,11 @@ end
     %found, the previous solution, U_init, becomes the new solution and the new solution,U_solut, goes
     %on to to change again.
     U_init = U_solut;
-    iter = iter+1;
-end
+    iter = iter+1
+    surf(x,y,U_solut)
+    drawnow
+    
+    %If the average error is low, it means the equation is converging to a value and the for loop stops and the current time is shown
 
-mesh(x,y,U_solut);
+end
+ grid = norm(U_solut,2)
